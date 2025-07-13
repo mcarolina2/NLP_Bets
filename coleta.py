@@ -1,6 +1,6 @@
 import tweepy
 
-bearer_token = "" 
+bearer_token = "coloque seu token da api aqui" 
 
 client = tweepy.Client(bearer_token = bearer_token)
 
