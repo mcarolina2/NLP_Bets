@@ -1,31 +1,29 @@
-import requests as req
-from bs4 import BeautifulSoup
+import requests
+import pandas as pd
 
-url = "https://agenciabrasil.ebc.com.br/busca/site?keys=apostas+manipuladas"
+API_KEY = '7997e5fe8f584ffc8ee1a3468551b871'  # minha chave
+query = 'apostas manipuladas OR CPI das bets'
 
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
-}
+url = f'https://newsapi.org/v2/everything?q={query}&language=pt&sortBy=publishedAt&apiKey={API_KEY}'
 
-response = req.get(url)  #print(response) #Testando o responde
+response = requests.get(url)
+
 if response.status_code == 200:
-   soup = BeautifulSoup(response.text, 'html.parser')
-#print(soup) #Testando o soup
+    data = response.json()
+    artigos = data['articles']
 
-   artigos = soup.find_all('div', class_="search-results-item")
+    noticias = []
+    for artigo in artigos:
+        noticias.append({
+            'Título': artigo['title'],
+            'Fonte': artigo['source']['name'],
+            'Publicado em': artigo['publishedAt'],
+            'Descrição': artigo['description'],
+            'URL': artigo['url']
+        })
 
-   for artigo in artigos:
-        titulo = artigo.find("h3", class_="search-results-title")
-        resumo = artigo.find("div", class_="search-results-summary")
-        link= link = titulo.find("a")["href"]
-
-        print("📰 Título:", titulo.get_text(strip=True))
-        print("🔗 Link: https://agenciabrasil.ebc.com.br" + link)
-        if resumo:
-            print("📄 Resumo:", resumo.get_text(strip=True))
-        print("-" * 60)
-    
-else: 
-    print("Erro ao acessar a Agência Brasil:", response.status_code)
-
-    
+    df = pd.DataFrame(noticias)
+    print(df)
+    df.to_csv('noticias_bets.csv', index=False)
+else:
+    print('Erro:', response.status_code, response.text)
