@@ -2,25 +2,25 @@ import pandas as pd
 import spacy
 import os
 
-# Carregar o modelo de português do spaCy
+# modelo de português do spaCy
 nlp = spacy.load("pt_core_news_sm")
 
-# Caminhos de entrada e saída
+# caminhos de entrada e saída
 input_path = "noticias_bets.csv"
 output_path = os.path.join("resultados", "analise_nlp.csv")
 
-# Carregar os dados
+# carregar os dados
 df = pd.read_csv(input_path)
 
-print("Iniciando script de análise NLP...")
+print("Iniciando script de análise NLP...") # isso aqui é so p ver se vai carregar msm
 
 if not os.path.exists(input_path):
     print(f"Arquivo não encontrado em: {input_path}")
     exit()
 else:
     print(f"Arquivo encontrado: {input_path}")
-    
-# Função para análise linguística com spaCy
+
+# função para análise linguística com spaCy
 def analisar_texto(texto):
     doc = nlp(str(texto))
     lemas = [token.lemma_ for token in doc if not token.is_stop and not token.is_punct]
@@ -34,13 +34,13 @@ def analisar_texto(texto):
         "Entidades": ", ".join(entidades)
     })
 
-# Aplicar a análise na coluna de descrição
+# aplicar a análise na coluna de descrição
 resultado = df["Descrição"].apply(analisar_texto)
 
-# Concatenar resultados com texto original
+# concatenar resultados com texto original
 df_final = pd.concat([df["Descrição"], resultado], axis=1)
 
-# Salvar arquivo final
+# salvar arquivo final
 os.makedirs("resultados", exist_ok=True)
 df_final.to_csv(output_path, index=False, encoding="utf-8")
 
