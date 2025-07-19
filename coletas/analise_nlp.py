@@ -1,24 +1,19 @@
 import pandas as pd
 import spacy
 import os
+import re
 
 # modelo de português do spaCy
 nlp = spacy.load("pt_core_news_sm")
 
 # caminhos de entrada e saída
-input_path = "noticias_bets.csv"
-output_path = os.path.join("resultados", "analise_nlp.csv")
+input_files = ["noticias_bets.csv", "tweets_bets.csv"]
+output_folder = "resultados"
+os.makedirs(output_folder, exist_ok=True)
 
-# carregar os dados
-df = pd.read_csv(input_path)
+regex_filtro = r"\b(apostas|jogo|bets)\b"
 
 print("Iniciando script de análise NLP...") # isso aqui é so p ver se vai carregar msm
-
-if not os.path.exists(input_path):
-    print(f"Arquivo não encontrado em: {input_path}")
-    exit()
-else:
-    print(f"Arquivo encontrado: {input_path}")
 
 # função para análise linguística com spaCy
 def analisar_texto(texto):
@@ -34,14 +29,39 @@ def analisar_texto(texto):
         "Entidades": ", ".join(entidades)
     })
 
-# aplicar a análise na coluna de descrição
-resultado = df["Descrição"].apply(analisar_texto)
+for file_path in input_files:
+    if not os.path.exists(file_path):
+        print(f"Arquivo não encontrado: {file_path}")
+        continue
 
-# concatenar resultados com texto original
-df_final = pd.concat([df["Descrição"], resultado], axis=1)
+    print(f"\nProcessando arquivo: {file_path}")
+    df = pd.read_csv(file_path)
 
-# salvar arquivo final
-os.makedirs("resultados", exist_ok=True)
-df_final.to_csv(output_path, index=False, encoding="utf-8")
+    # Verifica se a coluna 'Descrição' existe
+    if "Descrição" not in df.columns:
+        for col in df.columns:
+            if col.lower() in ["tweets"]:
+                df.rename(columns={col: "Descrição"}, inplace=True)
+                print(f"Coluna '{col}' renomeada para 'Descrição'.")
+                break
+        print(f"Coluna 'Descrição' não encontrada em {file_path}.")
+        continue
 
-print(f"Análise linguística salva com sucesso em: {output_path}")
+    # Filtrar com regex
+    df_filtrado = df[df["Descrição"].astype(str).str.contains(regex_filtro, flags=re.IGNORECASE, regex=True)]
+
+    if df_filtrado.empty:
+        print(f"Nenhuma linha correspondente ao filtro em {file_path}.")
+        continue
+
+    # Aplicar análise NLP
+    resultado = df_filtrado["Descrição"].apply(analisar_texto)
+    df_final = pd.concat([df_filtrado["Descrição"], resultado], axis=1)
+
+    # Criar nome do arquivo de saída
+    nome_saida = os.path.splitext(os.path.basename(file_path))[0]  # ex: 'noticias_bets'
+    output_path = os.path.join(output_folder, f"analise_{nome_saida}.csv")
+
+    # Salvar resultado
+    df_final.to_csv(output_path, index=False, encoding="utf-8")
+    print(f"Análise salva com sucesso em: {output_path}")
